@@ -3,6 +3,15 @@
   "description": "【五折码：CHEAP.5;七折码：CHEAP】A collection of widgets created by huangxd",
   "icon": "https://github.com/huangxd-/ForwardWidgets/raw/main/icon.png",
   "widgets": [
+  {
+      "id": "forward.combined.media.lists",
+      "title": "影视榜单",
+      "description": "聚合豆瓣、TMDB、IMDB和Bangumi的影视动画榜单",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.7",
+      "author": "阿米诺斯",
+      "url": "https://raw.githubusercontent.com/Jack123liang/FW.fwd/refs/heads/main/combined.js"
+    },
     {
       "id": "douban",
       "title": "豆瓣我看&豆瓣个性化推荐",
