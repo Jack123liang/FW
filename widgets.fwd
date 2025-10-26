@@ -3,7 +3,7 @@
   "description": "A collection of widgets created by Jack",
   "icon": "https://assets.vvebo.vip/scripts/icon.png",
   "widgets": [
-  {
+   {
       "id": "forward.combined.media.lists",
       "title": "影视榜单",
       "description": "聚合豆瓣、TMDB、IMDB和Bangumi的影视动画榜单",
