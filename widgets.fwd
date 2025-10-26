@@ -1,133 +1,43 @@
 {
-  "title": "饾搼饾摼饾摻饾摻饾摦饾摶饾摨饾摰饾攤 '饾摷 饾摝饾摬饾摥饾摪饾摦饾摻饾摷",
-  "description": "鏃ュ父鎵€闇€锛岀殕鍦ㄦ闂�",
+  "title": "Jack's Widgets",
+  "description": "A collection of widgets created by Jack",
   "icon": "https://for-ward.vercel.app/icon/icon.PNG",
   "widgets": [
     {
       "id": "forward.combined.media.lists",
-      "title": "褰辫姒滃崟",
-      "description": "褰辫鍔ㄧ敾姒滃崟",
+      "title": "影视榜单",
+      "description": "影视动画榜单",
       "requiredVersion": "0.0.2",
       "version": "1.3.9",
-      "author": "饾搼饾摼饾摻饾摻饾摦饾摶饾摨饾摰饾攤",
-      "url": "https://for-ward.vercel.app/Widgets/combined.js"
+      "author": "𝓑𝓾𝓽𝓽𝓮𝓻𝓯𝓵𝔂",
+      "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/combined.js"
     },
     {
       "id": "baranwang.danmu.universe",
-      "title": "閫氱敤寮瑰箷",
-      "description": "閫氱敤寮瑰箷鎻掍欢锛屾敮鎸佽吘璁€佷紭閰枫€佺埍濂囪壓銆佸摂鍝╁摂鍝┿€佷汉浜鸿棰戠瓑骞冲彴",
+      "title": "通用弹幕",
+      "description": "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩、人人视频等平台",
       "requiredVersion": "0.0.2",
       "version": "0.10.1",
       "author": "Baran",
-      "url": "https://for-ward.vercel.app/Widgets/danmu_universe.js"
+      "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/baranwang.danmu.universe.js"
     },
     {
       "id": "forward.auto.danmu",
-      "title": "鑷姩閾炬帴寮瑰箷v2",
-      "description": "鑷姩鑾峰彇鎾斁閾炬帴骞朵粠鏈嶅姟鍣ㄨ幏鍙栧脊骞曘€�30% off code锛欳HEAP銆�",
+      "title": "自动链接弹幕v2",
+      "description": "自动获取播放链接并从服务器获取弹幕",
       "requiredVersion": "0.0.2",
       "version": "2.0.8",
       "author": "huangxd",
-      "url": "https://for-ward.vercel.app/Widgets/danmu_auto.js"
+      "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/forward.auto.danmu.js"
     },
     {
       "id": "forward.auto.danmu_api",
-      "title": "danmu_api寮瑰箷",
-      "description": "浠巇anmu_api鑾峰彇寮瑰箷銆愪簲鎶樼爜锛欳HEAP.5;涓冩姌鐮侊細CHEAP銆�",
+      "title": "danmu_api弹幕",
+      "description": "从danmu_api获取弹幕",
       "requiredVersion": "0.0.2",
       "version": "1.0.3",
       "author": "huangxd",
-      "url": "https://for-ward.vercel.app/Widgets/danmu_api.js"
-    },
-    {
-      "id": "forward.combined.media.lists.en",
-      "title": "Movie & TV Lists",
-      "description": "Movie & TV Lists",
-      "requiredVersion": "0.0.2",
-      "version": "1.0.0",
-      "author": "饾搼饾摼饾摻饾摻饾摦饾摶饾摨饾摰饾攤",
-      "url": "https://for-ward.vercel.app/Widgets/Move_list_EN.js"
-    },
-    {
-      "id": "douban",
-      "title": "璞嗙摚鎴戠湅&璞嗙摚涓€у寲鎺ㄨ崘",
-      "description": "瑙ｆ瀽璞嗙摚鎯崇湅銆佸湪鐪嬨€佸凡鐪嬩互鍙婃牴鎹釜浜烘暟鎹敓鎴愮殑涓€у寲鎺ㄨ崘銆�30% off code锛欳HEAP銆�",
-      "requiredVersion": "0.0.1",
-      "version": "1.0.20",
-      "author": "huangxd",
-      "url": "https://for-ward.vercel.app/Widgets/douban.js"
-    },
-    {
-      "id": "trakt",
-      "title": "Trakt鎴戠湅&Trakt涓€у寲鎺ㄨ崘",
-      "description": "瑙ｆ瀽Trakt鎯崇湅銆佸湪鐪嬨€佸凡鐪嬨€佺墖鍗曘€佽拷鍓ф棩鍘嗕互鍙婃牴鎹釜浜烘暟鎹敓鎴愮殑涓€у寲鎺ㄨ崘銆�30% off code锛欳HEAP銆�",
-      "requiredVersion": "0.0.1",
-      "version": "1.0.15",
-      "author": "huangxd",
-      "url": "https://for-ward.vercel.app/Widgets/trakt.js"
-    },
-    {
-      "id": "zhuijurili",
-      "title": "杩藉墽鏃ュ巻(浠�/鏄庢棩鎾嚭銆佸懆鍘嗐€佸悇椤规鍗曘€佷粖鏃ユ帹鑽�)",
-      "description": "瑙ｆ瀽杩藉墽鏃ュ巻浠�/鏄庢棩鎾嚭鍓ч泦/鐣墽/鍥芥极/缁艰壓銆佸懆鍘嗐€佸悇椤规鍗曘€佷粖鏃ユ帹鑽愮瓑銆�30% off code锛欳HEAP銆�",
-      "requiredVersion": "0.0.1",
-      "version": "1.0.4",
-      "author": "huangxd",
-      "url": "https://for-ward.vercel.app/Widgets/zhuijurili.js"
-    },
-    {
-      "id": "yatu",
-      "title": "闆呭浘(姣忔棩鏀鹃€�+鐐规挱鎺掕姒�+璇勫垎鎺掕姒�)",
-      "description": "瑙ｆ瀽闆呭浘姣忔棩鏀鹃€佹洿鏂颁互鍙婂悇绫绘帓琛屾銆�30% off code锛欳HEAP銆�",
-      "requiredVersion": "0.0.1",
-      "version": "1.0.6",
-      "author": "huangxd",
-      "url": "https://for-ward.vercel.app/Widgets/yatu.js"
-    },
-    {
-      "id": "letterboxd",
-      "title": "Letterboxd鐢靛奖鐖卞ソ鑰呭钩鍙�",
-      "description": "瑙ｆ瀽Letterboxd鐗囧崟鍐呯殑褰辩墖銆�30% off code锛欳HEAP銆�",
-      "requiredVersion": "0.0.1",
-      "version": "1.0.2",
-      "author": "huangxd",
-      "url": "https://for-ward.vercel.app/Widgets/letterboxd.js"
-    },
-    {
-      "id": "hot_picks",
-      "title": "鐑棬绮鹃€�",
-      "description": "鑾峰彇鏈€鏂扮儹鎾墽鍜岀儹闂ㄥ奖鐗囨帹鑽�",
-      "requiredVersion": "0.0.1",
-      "version": "1.1.8",
-      "author": "涓ゅ潡",
-      "url": "https://for-ward.vercel.app/Widgets/HotPicks.js"
-    },
-    {
-      "id": "bangumi_charts_tmdb_v3",
-      "title": "Bangumi 鐑棬姒滃崟",
-      "description": "鑾峰彇Bangumi杩戞湡鐑棬銆佹瘡鏃ユ斁閫佹暟鎹紝鏀寔姒滃崟绛涢€夈€�",
-      "requiredVersion": "0.0.1",
-      "version": "2.0.0",
-      "author": "Autism",
-      "url": "https://for-ward.vercel.app/Widgets/Bangumi_v2.0.0.js"
-    },
-    {
-      "id": "yuanqi.wallpaper",
-      "title": "馃柤锔� 鉁╳allpaper",
-      "description": "鉁� Dynamic wallpaper For Topshelf",
-      "requiredVersion": "0.0.1",
-      "version": "2.3.0",
-      "author": "馃巵 Discount Code锛歏EUS",
-      "url": "https://for-ward.vercel.app/Widgets/wallpaper.js"
-    },
-    {
-      "id": "person.movie.tmdb",
-      "title": "TMDB浜虹墿褰辫浣滃搧",
-      "description": "鑾峰彇 TMDB 鐨勬鍗曟暟鎹�",
-      "requiredVersion": "0.0.1",
-      "version": "1.0.4",
-      "author": "Evan",
-      "url": "https://for-ward.vercel.app/Widgets/person_movie.js"
+      "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/danmu_api.js"
     }
   ]
 }
