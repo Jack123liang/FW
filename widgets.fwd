@@ -22,13 +22,13 @@
       "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/danmu_universe.js"
     },
     {
-      "id": "forward.auto.danmu",
+      "id": "danmu_auto",
       "title": "自动链接弹幕v2",
       "description": "自动获取播放链接并从服务器获取弹幕",
       "requiredVersion": "0.0.2",
-      "version": "2.0.8",
+      "version": "2.0.10",
       "author": "huangxd",
-      "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/forward.auto.danmu.js"
+      "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/danmu_auto.js"
     },
     {
       "id": "forward.auto.danmu_api",
