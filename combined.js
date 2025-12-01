@@ -1,11 +1,10 @@
-//Original Author:阿米诺斯
 WidgetMetadata = {
   id: "forward.combined.media.lists",
   title: "影视榜单",
   description: "影视动画榜单",
   author: "𝓑𝓾𝓽𝓽𝓮𝓻𝓯𝓵𝔂",
   site: "https://for-ward.vercel.app",
-  version: "1.3.9",
+  version: "1.5.0",
   requiredVersion: "0.0.2",
   detailCacheDuration: 60,
   modules: [
@@ -29,7 +28,19 @@ WidgetMetadata = {
             { title: "美国", value: "US" },
             { title: "韩国", value: "KR" },
             { title: "日本", value: "JP" },
-            { title: "英国", value: "GB" }
+            { title: "英国", value: "GB" },
+            { title: "泰国", value: "TH" },
+            { title: "意大利", value: "IT" },
+            { title: "德国", value: "DE" },
+            { title: "西班牙", value: "ES" },
+            { title: "俄罗斯", value: "RU" },
+            { title: "瑞典", value: "SE" },
+            { title: "巴西", value: "BR" },
+            { title: "丹麦", value: "DK" },
+            { title: "印度", value: "IN" },
+            { title: "加拿大", value: "CA" },
+            { title: "爱尔兰", value: "IE" },
+            { title: "澳大利亚", value: "AU" }
           ], 
           value: "" 
         },
@@ -54,7 +65,21 @@ WidgetMetadata = {
             { title: "美国", value: "US" },
             { title: "韩国", value: "KR" },
             { title: "日本", value: "JP" },
-            { title: "英国", value: "GB" }
+            { title: "英国", value: "GB" },
+            { title: "中国香港", value: "HK" },
+            { title: "中国台湾", value: "TW" },
+            { title: "泰国", value: "TH" },
+            { title: "意大利", value: "IT" },
+            { title: "德国", value: "DE" },
+            { title: "西班牙", value: "ES" },
+            { title: "俄罗斯", value: "RU" },
+            { title: "瑞典", value: "SE" },
+            { title: "巴西", value: "BR" },
+            { title: "丹麦", value: "DK" },
+            { title: "印度", value: "IN" },
+            { title: "加拿大", value: "CA" },
+            { title: "爱尔兰", value: "IE" },
+            { title: "澳大利亚", value: "AU" }
           ], 
           value: "" 
         },
@@ -948,6 +973,42 @@ function parseDoubanAppDispatchUrl(url) {
 }
 
 // =============TMDB功能函数============
+const MIN_VOTE_COUNT = {
+  movie: 50,
+  tv: 30
+};
+
+const POPULARITY_QUALITY_STANDARDS = {
+  movie: {
+    minVoteCount: 50,
+    minVoteAverage: 5.0
+  },
+  tv: {
+    minVoteCount: 10,
+    minVoteAverage: 5.0
+  }
+};
+
+const DOMESTIC_PLATFORMS = ['2007', '1330', '1419', '1605', '1631'];
+
+const DOMESTIC_MIN_VOTE_COUNT = {
+  tv: 5
+};
+
+const DOMESTIC_PLATFORM_STANDARDS = {
+  movie: {
+    minVoteCount: 15,
+    minVoteAverage: 4.5
+  },
+  tv: {
+    minVoteCount: 5,
+    minVoteAverage: 4.5
+  }
+};
+
+const CN_COUNTRY_CODE = 'CN';
+const isDomesticCN = (region) => region === CN_COUNTRY_CODE;
+
 async function fetchTmdbData(api, params) {
     const [data, genres] = await Promise.all([
         Widget.tmdb.get(api, { params: params }),
@@ -956,13 +1017,26 @@ async function fetchTmdbData(api, params) {
 
     const filteredResults = data.results
         .filter((item) => {
-            return item.poster_path &&
+            const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+            const sortBy = params.sort_by || '';
+
+            let passesFilter = item.poster_path &&
                    item.id &&
                    (item.title || item.name) &&
                    (item.title || item.name).trim().length > 0 &&
                    item.genre_ids && 
                    Array.isArray(item.genre_ids) && 
                    item.genre_ids.length >= 1;
+
+            if (passesFilter && sortBy === 'vote_average.desc') {
+                const isDomestic = DOMESTIC_PLATFORMS.includes(String(params.with_networks));
+                const minVoteCount = isDomestic
+                    ? DOMESTIC_MIN_VOTE_COUNT[mediaType]
+                    : (MIN_VOTE_COUNT[mediaType] || MIN_VOTE_COUNT.movie);
+                passesFilter = passesFilter && (item.vote_count >= minVoteCount);
+            }
+
+            return passesFilter;
         })
         .map((item) => {
             const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
@@ -1007,267 +1081,333 @@ async function loadTmdbTrendingData() {
 
 async function loadTodayHotTV(params) {
   const page = parseInt(params.page) || 1;
-  const region = params.sort_by || '';
-  
+  const region = params.sort_by || '';         
+  const sortBy = 'popularity.desc';           
+  const isPopularitySort = (s) => s === 'popularity.desc';
+  const isDomesticCN = (r) => r === 'CN';
+
   if (region) {
+    const std = isDomesticCN(region) && isPopularitySort(sortBy)
+      ? DOMESTIC_PLATFORM_STANDARDS.tv
+      : POPULARITY_QUALITY_STANDARDS.tv;
+
+    const discoverParams = {
+      language: params.language || 'zh-CN',
+      page: page,
+      with_origin_country: region,
+      sort_by: sortBy,
+      'vote_count.gte': std.minVoteCount,
+      'vote_average.gte': std.minVoteAverage
+    };
+
     const [data, genres] = await Promise.all([
-      Widget.tmdb.get(`/discover/tv`, { 
-        params: { 
-          language: params.language || 'zh-CN',
-          page: page,
-          with_origin_country: region,
-          sort_by: (region === '' || region === 'CN' || region === 'US') ? 'popularity.desc' : 'vote_count.desc'
-        } 
-      }),
+      Widget.tmdb.get('/discover/tv', { params: discoverParams }),
       fetchTmdbGenres()
     ]);
-    
+
     const items = data.results
-      .filter(item => item.poster_path && 
-                     item.genre_ids && 
-                     Array.isArray(item.genre_ids) && 
-                     item.genre_ids.length >= 1)
-      .map(item => ({
-        id: String(item.id),
-        type: "tmdb",
-        title: item.name,
-        description: item.overview,
-        releaseDate: item.first_air_date,
-        backdropPath: item.backdrop_path,
-        posterPath: item.poster_path,
-        rating: item.vote_average,
-        mediaType: "tv",
-        genreTitle: getTmdbGenreTitles(item.genre_ids || [], "tv"),
-        genre_ids: item.genre_ids || []
+      .filter((it) => it.poster_path && it.genre_ids?.length)
+      .map((it) => ({
+        id: String(it.id),
+        type: 'tmdb',
+        title: it.name,
+        description: it.overview,
+        releaseDate: it.first_air_date,
+        backdropPath: it.backdrop_path,
+        posterPath: it.poster_path,
+        rating: it.vote_average,
+        mediaType: 'tv',
+        genreTitle: getTmdbGenreTitles(it.genre_ids, 'tv'),
+        genre_ids: it.genre_ids
       }));
-    
+
     return filterBlockedItemsEnhanced(items);
   }
-  
+
   if (page === 1) {
     try {
       const data = await loadTmdbTrendingData();
-      const allTvItems = data.today_tv || [];
-      
+      const allTv = data.today_tv || [];
       const tvItems = [];
-      for (let i = 0; i < allTvItems.length && tvItems.length < 20; i++) {
-        const item = allTvItems[i];
-        if (item.type === 'tv' && item.poster_url && 
-            item.genre_ids && Array.isArray(item.genre_ids) && item.genre_ids.length >= 1) {
+      for (let i = 0; i < allTv.length && tvItems.length < 20; i++) {
+        const it = allTv[i];
+        if (it.type === 'tv' && it.poster_url && it.genre_ids?.length) {
           tvItems.push({
-            id: item.id.toString(),
-            type: "tmdb",
-            title: item.title,
-            genreTitle: item.genreTitle,
-            rating: item.rating,
-            description: item.overview,
-            releaseDate: item.release_date,
-            posterPath: item.poster_url,
-            backdropPath: item.title_backdrop,
+            id: it.id.toString(),
+            type: 'tmdb',
+            title: it.title,
+            genreTitle: it.genreTitle,
+            rating: it.rating,
+            description: it.overview,
+            releaseDate: it.release_date,
+            posterPath: it.poster_url,
+            backdropPath: it.title_backdrop,
             mediaType: 'tv',
-            genre_ids: item.genre_ids || []
+            genre_ids: it.genre_ids || []
           });
         }
       }
-      
       return filterBlockedItemsEnhanced(tvItems);
-    } catch (error) {
+    } catch (e) {
     }
   }
-  
+
+  const std = POPULARITY_QUALITY_STANDARDS.tv;
+  const fallbackParams = {
+    language: params.language || 'zh-CN',
+    page: page,
+    sort_by: sortBy,
+    'vote_count.gte': std.minVoteCount,
+    'vote_average.gte': std.minVoteAverage
+  };
+
   const [data, genres] = await Promise.all([
-    Widget.tmdb.get(`/trending/tv/day`, { 
-      params: { 
-        language: params.language || 'zh-CN',
-        page: page
-      } 
-    }),
+    Widget.tmdb.get('/discover/tv', { params: fallbackParams }),
     fetchTmdbGenres()
   ]);
-  
+
   const items = data.results
-    .filter(item => (!item.media_type || item.media_type === 'tv') && 
-                   item.poster_path &&
-                   item.genre_ids && 
-                   Array.isArray(item.genre_ids) && 
-                   item.genre_ids.length >= 1)
-    .map(item => ({
-      id: String(item.id),
-      type: "tmdb",
-      title: item.name,
-      description: item.overview,
-      releaseDate: item.first_air_date,
-      backdropPath: item.backdrop_path,
-      posterPath: item.poster_path,
-      rating: item.vote_average,
-      mediaType: "tv",
-      genreTitle: getTmdbGenreTitles(item.genre_ids || [], "tv"),
-      genre_ids: item.genre_ids || []
+    .filter((it) => it.poster_path && it.genre_ids?.length)
+    .map((it) => ({
+      id: String(it.id),
+      type: 'tmdb',
+      title: it.name,
+      description: it.overview,
+      releaseDate: it.first_air_date,
+      backdropPath: it.backdrop_path,
+      posterPath: it.poster_path,
+      rating: it.vote_average,
+      mediaType: 'tv',
+      genreTitle: getTmdbGenreTitles(it.genre_ids, 'tv'),
+      genre_ids: it.genre_ids
     }));
-  
+
   return filterBlockedItemsEnhanced(items);
 }
 
 async function loadTodayHotMovies(params) {
   const page = parseInt(params.page) || 1;
   const region = params.sort_by || '';
-  
+  const sortBy = 'popularity.desc';
+
+  const isPopularitySort = (s) => s === 'popularity.desc';
+  const isDomesticCN = (r) => r === 'CN';
+
   if (region) {
+    const std = isDomesticCN(region) && isPopularitySort(sortBy)
+      ? DOMESTIC_PLATFORM_STANDARDS.movie
+      : POPULARITY_QUALITY_STANDARDS.movie;
+
+    const discoverParams = {
+      language: params.language || 'zh-CN',
+      page: page,
+      with_origin_country: region,
+      sort_by: sortBy,
+      'vote_count.gte': std.minVoteCount,
+      'vote_average.gte': std.minVoteAverage
+    };
+
     const [data, genres] = await Promise.all([
-      Widget.tmdb.get(`/discover/movie`, { 
-        params: { 
-          language: params.language || 'zh-CN',
-          page: page,
-          with_origin_country: region,
-          sort_by: (region === '' || region === 'CN' || region === 'US') ? 'popularity.desc' : 'vote_count.desc'
-        } 
-      }),
+      Widget.tmdb.get('/discover/movie', { params: discoverParams }),
       fetchTmdbGenres()
     ]);
-    
+
     const items = data.results
-      .filter(item => item.poster_path &&
-                     item.genre_ids && 
-                     Array.isArray(item.genre_ids) && 
-                     item.genre_ids.length >= 1)
-      .map(item => ({
-        id: String(item.id),
-        type: "tmdb",
-        title: item.title,
-        description: item.overview,
-        releaseDate: item.release_date,
-        backdropPath: item.backdrop_path,
-        posterPath: item.poster_path,
-        rating: item.vote_average,
-        mediaType: "movie",
-        genreTitle: getTmdbGenreTitles(item.genre_ids || [], "movie"),
-        genre_ids: item.genre_ids || []
+      .filter((it) => it.poster_path && it.genre_ids?.length)
+      .map((it) => ({
+        id: String(it.id),
+        type: 'tmdb',
+        title: it.title,
+        description: it.overview,
+        releaseDate: it.release_date,
+        backdropPath: it.backdrop_path,
+        posterPath: it.poster_path,
+        rating: it.vote_average,
+        mediaType: 'movie',
+        genreTitle: getTmdbGenreTitles(it.genre_ids, 'movie'),
+        genre_ids: it.genre_ids
       }));
-    
+
     return filterBlockedItemsEnhanced(items);
   }
-  
+
   if (page === 1) {
     try {
       const data = await loadTmdbTrendingData();
-      const allMovieItems = data.today_movies || [];
-      
+      const allMovies = data.today_movies || [];
       const movieItems = [];
-      for (let i = 0; i < allMovieItems.length && movieItems.length < 20; i++) {
-        const item = allMovieItems[i];
-        if (item.type === 'movie' && item.poster_url &&
-            item.genre_ids && Array.isArray(item.genre_ids) && item.genre_ids.length >= 1) {
+      for (let i = 0; i < allMovies.length && movieItems.length < 20; i++) {
+        const it = allMovies[i];
+        if (it.type === 'movie' && it.poster_url && it.genre_ids?.length) {
           movieItems.push({
-            id: item.id.toString(),
-            type: "tmdb",
-            title: item.title,
-            genreTitle: item.genreTitle,
-            rating: item.rating,
-            description: item.overview,
-            releaseDate: item.release_date,
-            posterPath: item.poster_url,
-            backdropPath: item.title_backdrop,
+            id: it.id.toString(),
+            type: 'tmdb',
+            title: it.title,
+            genreTitle: it.genreTitle,
+            rating: it.rating,
+            description: it.overview,
+            releaseDate: it.release_date,
+            posterPath: it.poster_url,
+            backdropPath: it.title_backdrop,
             mediaType: 'movie',
-            genre_ids: item.genre_ids || []
+            genre_ids: it.genre_ids || []
           });
         }
       }
-      
       return filterBlockedItemsEnhanced(movieItems);
-    } catch (error) {
+    } catch (e) {
     }
   }
-  
+
+  const std = POPULARITY_QUALITY_STANDARDS.movie;
+  const fallbackParams = {
+    language: params.language || 'zh-CN',
+    page: page,
+    sort_by: sortBy,
+    'vote_count.gte': std.minVoteCount,
+    'vote_average.gte': std.minVoteAverage
+  };
+
   const [data, genres] = await Promise.all([
-    Widget.tmdb.get(`/trending/movie/day`, { 
-      params: { 
-        language: params.language || 'zh-CN',
-        page: page
-      } 
-    }),
+    Widget.tmdb.get('/discover/movie', { params: fallbackParams }),
     fetchTmdbGenres()
   ]);
-  
+
   const items = data.results
-    .filter(item => (!item.media_type || item.media_type === 'movie') && 
-                   item.poster_path &&
-                   item.genre_ids && 
-                   Array.isArray(item.genre_ids) && 
-                   item.genre_ids.length >= 1)
-    .map(item => ({
-      id: String(item.id),
-      type: "tmdb",
-      title: item.title,
-      description: item.overview,
-      releaseDate: item.release_date,
-      backdropPath: item.backdrop_path,
-      posterPath: item.poster_path,
-      rating: item.vote_average,
-      mediaType: "movie",
-      genreTitle: getTmdbGenreTitles(item.genre_ids || [], "movie"),
-      genre_ids: item.genre_ids || []
+    .filter((it) => it.poster_path && it.genre_ids?.length)
+    .map((it) => ({
+      id: String(it.id),
+      type: 'tmdb',
+      title: it.title,
+      description: it.overview,
+      releaseDate: it.release_date,
+      backdropPath: it.backdrop_path,
+      posterPath: it.poster_path,
+      rating: it.vote_average,
+      mediaType: 'movie',
+      genreTitle: getTmdbGenreTitles(it.genre_ids, 'movie'),
+      genre_ids: it.genre_ids
     }));
-  
+
   return filterBlockedItemsEnhanced(items);
 }
 
 async function tmdbTopRated(params) {
     const type = params.type || 'movie';
     const api = type === 'movie' ? `movie/top_rated` : `tv/top_rated`;
-    return await fetchTmdbData(api, params);
+    
+    const [data, genres] = await Promise.all([
+        Widget.tmdb.get(api, { params: params }),
+        fetchTmdbGenres()
+    ]);
+
+    const filteredResults = data.results
+        .filter((item) => {
+            const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+            const minVoteCount = MIN_VOTE_COUNT[type] || MIN_VOTE_COUNT.movie;
+            
+            return item.poster_path &&
+                   item.id &&
+                   (item.title || item.name) &&
+                   (item.title || item.name).trim().length > 0 &&
+                   item.genre_ids && 
+                   Array.isArray(item.genre_ids) && 
+                   item.genre_ids.length >= 1 &&
+                   item.vote_count >= minVoteCount;
+        })
+        .map((item) => {
+            const mediaType = item.media_type || (item.title ? 'movie' : 'tv');
+            const genreIds = item.genre_ids || [];
+            const genreTitle = getTmdbGenreTitles(genreIds, mediaType);
+
+            return {
+                id: item.id,
+                type: "tmdb",
+                title: item.title || item.name,
+                description: item.overview,
+                releaseDate: item.release_date || item.first_air_date,
+                backdropPath: item.backdrop_path,
+                posterPath: item.poster_path,
+                rating: item.vote_average,
+                mediaType: mediaType,
+                genreTitle: genreTitle,
+                genre_ids: genreIds
+            };
+        });
+
+    return filterBlockedItemsEnhanced(filteredResults);
 }
 
 async function tmdbDiscoverByNetwork(params = {}) {
-    const api = "discover/tv";
-    const beijingDate = getBeijingDate();
-    const discoverParams = {
-        language: params.language || 'zh-CN',
-        page: params.page || 1,
-        with_networks: params.with_networks,
-        sort_by: params.sort_by || "first_air_date.desc",
-    };
-    
-    if (params.air_status === 'released') {
-        discoverParams['first_air_date.lte'] = beijingDate;
-    } else if (params.air_status === 'upcoming') {
-        discoverParams['first_air_date.gte'] = beijingDate;
-    }
-    
-    if (params.with_genres) {
-        discoverParams.with_genres = params.with_genres;
-    }
-    
-    return await fetchTmdbData(api, discoverParams);
+  const api = "discover/tv";
+  const beijingDate = getBeijingDate();
+  const sortBy = params.sort_by || "first_air_date.desc";
+
+  const discoverParams = {
+    language: params.language || 'zh-CN',
+    page: params.page || 1,
+    with_networks: params.with_networks,
+    sort_by: sortBy
+  };
+  
+  if (sortBy === 'vote_average.desc') {
+    const isDomestic = DOMESTIC_PLATFORMS.includes(String(params.with_networks));
+    const std = isDomestic ? DOMESTIC_MIN_VOTE_COUNT.tv : MIN_VOTE_COUNT.tv;
+    discoverParams['vote_count.gte'] = std;
+  }
+
+  if (params.air_status === 'released') {
+    discoverParams['first_air_date.lte'] = beijingDate;
+  } else if (params.air_status === 'upcoming') {
+    discoverParams['first_air_date.gte'] = beijingDate;
+  }
+  if (params.with_genres) {
+    discoverParams.with_genres = params.with_genres;
+  }
+
+  return await fetchTmdbData(api, discoverParams);
 }
 
 async function tmdbCompanies(params = {}) {
-    const api = "discover/movie";
-    const beijingDate = getBeijingDate();
-    const withCompanies = String(params.with_companies || '').trim();
+  const api = "discover/movie";
+  const beijingDate = getBeijingDate();
+  const withCompanies = String(params.with_companies || '').trim();
+  const sortBy = params.sort_by || "primary_release_date.desc";
 
-    const cleanParams = {
-        page: params.page || 1,
-        language: params.language || "zh-CN",
-        sort_by: params.sort_by || "primary_release_date.desc",
-        include_adult: false,
-        include_video: false
-    };
+  const cleanParams = {
+    page: params.page || 1,
+    language: params.language || "zh-CN",
+    sort_by: sortBy,
+    include_adult: false,
+    include_video: false
+  };
 
-    if (withCompanies) {
-        cleanParams.with_companies = withCompanies;
-    }
+  if (sortBy === 'vote_average.desc') {
+    cleanParams['vote_count.gte'] = MIN_VOTE_COUNT.movie;
+  }
 
-    if (params.air_status === 'released') {
-        cleanParams['primary_release_date.lte'] = beijingDate;
-    } else if (params.air_status === 'upcoming') {
-        cleanParams['primary_release_date.gte'] = beijingDate;
-    }
+  if (sortBy === 'popularity.desc') {
+    cleanParams['vote_count.gte'] = POPULARITY_QUALITY_STANDARDS.movie.minVoteCount;
+    cleanParams['vote_average.gte'] = POPULARITY_QUALITY_STANDARDS.movie.minVoteAverage;
+  }
 
-    if (params.with_genres) {
-        cleanParams.with_genres = String(params.with_genres).trim();
-    }
+  if (sortBy === 'vote_count.desc') {
+    cleanParams['vote_average.gte'] = 6.0;
+  }
 
-    return await fetchTmdbData(api, cleanParams);
+  if (withCompanies) {
+    cleanParams.with_companies = withCompanies;
+  }
+  if (params.air_status === 'released') {
+    cleanParams['primary_release_date.lte'] = beijingDate;
+  } else if (params.air_status === 'upcoming') {
+    cleanParams['primary_release_date.gte'] = beijingDate;
+  }
+  if (params.with_genres) {
+    cleanParams.with_genres = String(params.with_genres).trim();
+  }
+
+  return await fetchTmdbData(api, cleanParams);
 }
 
 // ===============搜索屏蔽==============
@@ -2684,10 +2824,17 @@ function mapTmdbGenreIdToChineseName(genreId) {
 async function fetchImdbItemsForDouban(scItems) {
     const promises = scItems.map(async (scItem) => {
         const titleNormalizationRules = [
+            { pattern: /^\u771f\u7684\u662f\u5f88\u4e0d\u9519\u7684\u4eba/, replacement: '\uc9c4\uc9dc \uad1c\ucc2e\uc740 \uc0ac\ub78c', forceFirstResult: true },
+            { pattern: /^\u6700\u540e\u590d\u6d3b\u6218/, replacement: '\u30d5\u30a1\u30a4\u30ca\u30eb\u30c9\u30e9\u30d5\u30c8', forceFirstResult: true },
+            { pattern: /^\u66b4\u98ce\u5708/, replacement: '\ubd81\uadf9\uc131', forceFirstResult: true },
+            { pattern: /^\u5510\u671d\u8be1\u4e8b\u5f55\u4e4b\u957f\u5b89/, replacement: '\u5510\u671d\u8be1\u4e8b\u5f55', forceFirstResult: true },
             { pattern: /^\u51e1\u4eba\u4fee\u4ed9\u4f20[\uff1a:]\u91cd\u8fd4\u5929\u5357/, replacement: '\u51e1\u4eba\u4fee\u4ed9\u4f20', forceFirstResult: true },
             { pattern: /^\u7f57\u5c0f\u9ed1\u6218\u8bb0/, replacement: '\u7f57\u5c0f\u9ed1\u6218\u8bb0', forceMovieType: true },
             { pattern: /^\u7d2b\u5ddd \u7b2c\u4e8c\u5b63/, replacement: '\u7d2b\u5ddd', forceFirstResult: true },
             { pattern: /^\u661f\u671f\u4e09 \u7b2c\u4e8c\u5b63/, replacement: 'Wednesday', forceFirstResult: true, forceTypeFilter: 'tv' },
+            { pattern: /^\u66b4\u98ce\u5708/, replacement: '\ubd81\uadf9\uc131', forceFirstResult: true },
+            { pattern: /^\u6d41\u4eba \u7b2c\u4e94\u5b63/, replacement: 'Slow Horses', forceFirstResult: true },
+            { pattern: / \u7b2c[^\u5b63]*\u5b63/, replacement: '' },
             { pattern: /^\u5343\u4e0e\u5343\u5bfb/, replacement: '\u5343\u4e0e\u5343\u5bfb', forceMovieType: true },
             { pattern: /^\u54c8\u5c14\u7684\u79fb\u52a8\u57ce\u5821/, replacement: '\u54c8\u5c14\u7684\u79fb\u52a8\u57ce\u5821', forceMovieType: true },
             { pattern: /^\u9b3c\u706d\u4e4b\u5203/, replacement: '\u9b3c\u706d\u4e4b\u5203', forceMovieType: true },
