@@ -15,7 +15,7 @@
 WidgetMetadata = {
   id: "forward.auto.danmu2",
   title: "自动链接弹幕v2",
-  version: "2.0.6",
+  version: "2.0.10",
   requiredVersion: "0.0.2",
   description: "自动获取播放链接并从服务器获取弹幕【五折码：CHEAP.5;七折码：CHEAP】",
   author: "huangxd",
@@ -59,19 +59,19 @@ WidgetMetadata = {
       placeholders: [
         {
           title: "配置1",
-          value: "vod@https://www.caiji.cyou,vod2@https://gctf.tfdh.top,vod3@https://zy.xmm.hk",
+          value: "vod@https://zy.jinchancaiji.com,vod2@https://www.caiji.cyou,vod3@https://gctf.tfdh.top",
         },
         {
           title: "配置2",
-          value: "vod@https://www.caiji.cyou",
+          value: "vod@https://zy.jinchancaiji.com",
         },
         {
           title: "配置3",
-          value: "vod@https://www.caiji.cyou,vod2@https://zy.xmm.hk",
+          value: "vod@https://zy.jinchancaiji.com,vod2@https://www.caiji.cyou",
         },
         {
           title: "配置4",
-          value: "vod@https://www.caiji.cyou,vod2@https://gctf.tfdh.top",
+          value: "vod@https://zy.jinchancaiji.com,vod2@https://gctf.tfdh.top",
         },
       ],
     },
@@ -1282,7 +1282,7 @@ function rgbToInt(color) {
 // 获取腾讯弹幕
 // =====================
 
-async function fetchTencentVideo(inputUrl, segmentTime, tmdbId, season, episode) {
+async function fetchTencentVideo(inputUrl, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute) {
   log("info", "开始从本地请求腾讯视频弹幕...", inputUrl);
 
   // 弹幕 API 基础地址
@@ -1353,7 +1353,7 @@ async function fetchTencentVideo(inputUrl, segmentTime, tmdbId, season, episode)
     }
     const storeKey = season && episode ? `${tmdbId}.${season}.${episode}` : `${tmdbId}`;
     Widget.storage.set(storeKey, mediaInfo);
-    return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode })
+    return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute })
   } catch (error) {
     log("error", "获取弹幕分段数据失败:", error);
   }
@@ -1416,7 +1416,7 @@ async function fetchTencentVideoDanmaku(vid, segment) {
 // 获取爱奇艺弹幕
 // =====================
 
-async function fetchIqiyi(inputUrl, segmentTime, tmdbId, season, episode) {
+async function fetchIqiyi(inputUrl, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute) {
   log("info", "开始从本地请求爱奇艺弹幕...", inputUrl);
 
   // 弹幕 API 基础地址
@@ -1507,7 +1507,7 @@ async function fetchIqiyi(inputUrl, segmentTime, tmdbId, season, episode) {
   const storeKey = season && episode ? `${tmdbId}.${season}.${episode}` : `${tmdbId}`;
   Widget.storage.set(storeKey, mediaInfo);
 
-  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode });
+  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute });
 }
 
 async function fetchIqiyiDanmaku(segment) {
@@ -1570,12 +1570,13 @@ async function fetchIqiyiDanmaku(segment) {
 // 获取芒果TV弹幕
 // =====================
 
-async function fetchMangoTV(inputUrl, segmentTime, tmdbId, season, episode) {
+async function fetchMangoTV(inputUrl, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute) {
   log("info", "开始从本地请求芒果TV弹幕...", inputUrl);
 
   // 弹幕和视频信息 API 基础地址
   const api_video_info = "https://pcweb.api.mgtv.com/video/info";
   const api_ctl_barrage = "https://galaxy.bz.mgtv.com/getctlbarrage";
+  const api_rd_barrage = "https://galaxy.bz.mgtv.com/rdbarrage";
 
   // 解析 URL 获取 cid 和 vid
   // 手动解析 URL（没有 URL 对象的情况下）
@@ -1617,7 +1618,9 @@ async function fetchMangoTV(inputUrl, segmentTime, tmdbId, season, episode) {
 
   // 计算弹幕分段请求
   let segmentList = [];
+  let useNewApi = true;
 
+  // 尝试使用新API（支持彩色弹幕）
   try {
     const ctlBarrageUrl = `${api_ctl_barrage}?version=8.1.39&abroad=0&uuid=&os=10.15.7&platform=0&mac=&vid=${vid}&pid=&cid=${cid}&ticket=`;
     const res = await Widget.http.get(ctlBarrageUrl, {
@@ -1628,18 +1631,43 @@ async function fetchMangoTV(inputUrl, segmentTime, tmdbId, season, episode) {
     });
     const ctlBarrage = typeof res.data === "string" ? JSON.parse(res.data) : res.data;
 
-    // 每1分钟一个分段
-    for (let i = 0; i < Math.ceil(time_to_second(time) / 60); i += 1) {
-      const danmakuUrl = `https://${ctlBarrage.data?.cdn_list.split(',')[0]}/${ctlBarrage.data?.cdn_version}/${i}.json`;
-      segmentList.push({
-        "segment_start": i * 60 * 1000,
-        "segment_end": (i + 1) * 60 * 1000,
-        "url": danmakuUrl
-      });
+    // 检查数据结构
+    if (!ctlBarrage.data || !ctlBarrage.data.cdn_list || !ctlBarrage.data.cdn_version) {
+      log("warn", `新API缺少必要字段，切换到旧API`);
+      useNewApi = false;
+    } else {
+      // 每1分钟一个分段
+      for (let i = 0; i < Math.ceil(time_to_second(time) / 60); i += 1) {
+        const danmakuUrl = `https://${ctlBarrage.data?.cdn_list.split(',')[0]}/${ctlBarrage.data?.cdn_version}/${i}.json`;
+        segmentList.push({
+          "segment_start": i * 60 * 1000,
+          "segment_end": (i + 1) * 60 * 1000,
+          "url": danmakuUrl
+        });
+      }
     }
   } catch (error) {
-    log("error", "请求弹幕分片失败:", error);
-    return [];
+    log("warn", "新API请求失败，切换到旧API:", error.message);
+    useNewApi = false;
+  }
+
+  // 如果新API失败，使用旧API作为兜底
+  if (!useNewApi) {
+    try {
+      const step = 60 * 1000; // 每60秒一个分段
+      const end_time = time_to_second(time) * 1000;
+      for (let i = 0; i < end_time; i += step) {
+        const danmakuUrl = `${api_rd_barrage}?vid=${vid}&cid=${cid}&time=${i}`;
+        segmentList.push({
+          "segment_start": i,
+          "segment_end": i + step,
+          "url": danmakuUrl
+        });
+      }
+    } catch (error) {
+      log("error", "旧API请求失败:", error);
+      return [];
+    }
   }
 
   const domain = ".mgtv.com";
@@ -1650,7 +1678,7 @@ async function fetchMangoTV(inputUrl, segmentTime, tmdbId, season, episode) {
   const storeKey = season && episode ? `${tmdbId}.${season}.${episode}` : `${tmdbId}`;
   Widget.storage.set(storeKey, mediaInfo);
 
-  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode })
+  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute })
 }
 
 async function fetchMangoDanmaku(segment) {
@@ -1734,7 +1762,7 @@ async function fetchMangoDanmaku(segment) {
 // 获取bilibili弹幕
 // =====================
 
-async function fetchBilibili(inputUrl, segmentTime, tmdbId, season, episode) {
+async function fetchBilibili(inputUrl, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute) {
   log("info", "开始从本地请求B站弹幕...", inputUrl);
 
   // 弹幕和视频信息 API 基础地址
@@ -1877,7 +1905,7 @@ async function fetchBilibili(inputUrl, segmentTime, tmdbId, season, episode) {
   const storeKey = season && episode ? `${tmdbId}.${season}.${episode}` : `${tmdbId}`;
   Widget.storage.set(storeKey, mediaInfo);
 
-  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode });
+  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute });
 }
 
 async function fetchBilibiliDanmaku(segment) {
@@ -1912,7 +1940,7 @@ function convertYoukuUrl(url) {
   return `https://v.youku.com/v_show/id_${vid}.html`;
 }
 
-async function fetchYouku(inputUrl, segmentTime, tmdbId, season, episode) {
+async function fetchYouku(inputUrl, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute) {
   log("info", "开始从本地请求优酷弹幕...", inputUrl);
 
   if (!inputUrl) {
@@ -2112,7 +2140,7 @@ async function fetchYouku(inputUrl, segmentTime, tmdbId, season, episode) {
   const storeKey = season && episode ? `${tmdbId}.${season}.${episode}` : `${tmdbId}`;
   Widget.storage.set(storeKey, mediaInfo);
 
-  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode });
+  return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute });
 }
 
 async function fetchYoukuDanmaku(segment) {
@@ -3083,7 +3111,7 @@ async function fetchHanjutvEpisodeDanmu(sid) {
 function formatHanjutvComments(items) {
   return items.map(c => ({
     cid: Number(c.did),
-    p: `${(c.t / 1000).toFixed(2)},${c.tp},${Number(c.sc)},[hanjutv]`,
+    p: `${(c.t / 1000).toFixed(2)},${c.tp === 2 ? 5 : c.tp},${Number(c.sc)},[hanjutv]`,
     m: c.con,
     t: Math.round(c.t / 1000)
   }));
@@ -3346,6 +3374,9 @@ function extractYear(animeTitle) {
   return match ? parseInt(match[1]) : null;
 }
 
+// 正则表达式：提取anime标题中的内容
+const extractAnimeTitle = (str) => str.split('(')[0].trim();
+
 // 按年份降序排序并添加到curAnimes
 function sortAndPushAnimesByYear(processedAnimes, curAnimes) {
   processedAnimes
@@ -3356,7 +3387,13 @@ function sortAndPushAnimesByYear(processedAnimes, curAnimes) {
 
       // 如果都有年份，按年份降序排列
       if (yearA !== null && yearA !== undefined && yearB !== null && yearB !== undefined) {
-        return yearB - yearA;
+        if (yearB !== yearA) {
+          return yearB - yearA;
+        }
+        // 年份相同时，按 title 字数升序排列（字数少的在前）
+        const titleA = extractAnimeTitle(a.animeTitle);
+        const titleB = extractAnimeTitle(b.animeTitle);
+        return titleA.length - titleB.length;
       }
       // 如果只有a有年份，a排在前面
       if ((yearA !== null && yearA !== undefined) && (yearB === null || yearB === undefined)) {
@@ -3811,7 +3848,7 @@ async function getBangumi(animeId) {
 }
 
 // Extracted function for GET /api/v2/comment/:commentId
-async function getComment(commentId, segmentTime, tmdbId, season, episode) {
+async function getComment(commentId, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute) {
   let url = findUrlById(commentId);
   let title = findTitleById(commentId);
   let plat = (title.match(/【(.*?)】/) || [null])[0]?.replace(/[【】]/g, '');
@@ -3833,15 +3870,15 @@ async function getComment(commentId, segmentTime, tmdbId, season, episode) {
   log("info", "开始从本地请求弹幕...", url);
   let danmus = [];
   if (url.includes('.qq.com')) {
-    danmus = await fetchTencentVideo(url, segmentTime, tmdbId, season, episode);
+    danmus = await fetchTencentVideo(url, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute);
   } else if (url.includes('.iqiyi.com')) {
-    danmus = await fetchIqiyi(url, segmentTime, tmdbId, season, episode);
+    danmus = await fetchIqiyi(url, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute);
   } else if (url.includes('.mgtv.com')) {
-    danmus = await fetchMangoTV(url, segmentTime, tmdbId, season, episode);
+    danmus = await fetchMangoTV(url, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute);
   } else if (url.includes('.bilibili.com')) {
-    danmus = await fetchBilibili(url, segmentTime, tmdbId, season, episode);
+    danmus = await fetchBilibili(url, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute);
   } else if (url.includes('.youku.com')) {
-    danmus = await fetchYouku(url, segmentTime, tmdbId, season, episode);
+    danmus = await fetchYouku(url, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute);
   }
 
   // 请求其他平台弹幕
@@ -3981,10 +4018,10 @@ async function getCommentsById(params) {
     log("info", "tmdbId:", tmdbId);
     log("info", "mediaInfo:", mediaInfo);
     if (mediaInfo && mediaInfo.domain && mediaInfo.segmentList) {
-        return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode })
+        return await getDanmuWithSegmentTime({ segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute })
     }
 
-    const data = await getComment(commentId, segmentTime, tmdbId, season, episode);
+    const data = await getComment(commentId, segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute);
 
     return data;
   }
@@ -3992,7 +4029,9 @@ async function getCommentsById(params) {
 }
 
 async function getDanmuWithSegmentTime(params) {
-  const { segmentTime, tmdbId, season, episode} = params;
+  const { segmentTime, tmdbId, season, episode, other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute } = params;
+
+  await initEnv(other_server, vod_servers, bilibili_cookie, source_order, blocked_words, group_minute);
 
   const time = segmentTime * 1000;
   const storeKey = season && episode ? `${tmdbId}.${season}.${episode}` : `${tmdbId}`;
