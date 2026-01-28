@@ -18,8 +18,8 @@
       "description": "获取最新热门影片推荐",
       "requiredVersion": "0.0.1",
       "version": "1.2.1",
-      "author": "Jackie",
-      "url": "https://for-ward.vercel.app/Widgets/HotPicks.js"
+      "author": "两块",
+      "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/HotPicks.js"
     },
     {
       "id": "baranwang.danmu.universe",
