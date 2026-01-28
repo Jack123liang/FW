@@ -13,6 +13,15 @@
       "url": "https://raw.githubusercontent.com/Jack123liang/FW/refs/heads/main/combined.js"
     },
     {
+      "id": "hot_picks",
+      "title": "热门精选",
+      "description": "获取最新热门影片推荐",
+      "requiredVersion": "0.0.1",
+      "version": "1.2.1",
+      "author": "Jackie",
+      "url": "https://for-ward.vercel.app/Widgets/HotPicks.js"
+    },
+    {
       "id": "baranwang.danmu.universe",
       "title": "通用弹幕",
       "description": "通用弹幕插件，支持腾讯、优酷、爱奇艺、哔哩哔哩、人人视频等平台",
